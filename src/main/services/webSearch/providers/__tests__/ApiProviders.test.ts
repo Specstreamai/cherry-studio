@@ -56,6 +56,7 @@ import { ParallelProvider } from '../api/ParallelProvider'
 import { QueritProvider } from '../api/QueritProvider'
 import { SearxngProvider } from '../api/SearxngProvider'
 import { SerplyProvider } from '../api/SerplyProvider'
+import { SpecStreamProvider } from '../api/SpecStreamProvider'
 import { TavilyProvider } from '../api/TavilyProvider'
 import { YuanbaoProvider } from '../api/YuanbaoProvider'
 import { ZhipuProvider } from '../api/ZhipuProvider'
@@ -679,6 +680,125 @@ describe('main web search API providers', () => {
 
     await expect(provider.searchKeywords('Cherry Studio', runtimeConfig)).rejects.toThrow(
       /deepseek request failed: HTTP 402 Not Enough Credits/
+    )
+  })
+
+  it('matches the SpecStream search request and orders the answer page, rows and sources', async () => {
+    fetchMock.mockResolvedValue(createJsonResponse(loadFixtureJson('specstream-search-response.json')))
+
+    const provider = createProviderDriver(
+      SpecStreamProvider,
+      createProvider({
+        id: 'specstream',
+        name: 'SpecStream',
+        apiKeys: ['specstream-key'],
+        capabilities: [
+          { feature: 'searchKeywords', apiHost: 'https://api.specstream.ai' },
+          { feature: 'fetchUrls', apiHost: 'https://api.specstream.ai' }
+        ]
+      })
+    )
+
+    const result = await provider.searchKeywords('Cherry Studio', runtimeConfig)
+
+    expect(toRequestSnapshot(fetchMock.mock.lastCall as [string, RequestInit | undefined])).toEqual({
+      body: null,
+      headers: {
+        accept: 'application/json',
+        authorization: 'Bearer specstream-key',
+        'http-referer': 'https://cherry-ai.com',
+        'x-title': 'Cherry Studio'
+      },
+      method: 'GET',
+      url: 'https://api.specstream.ai/v1/web-search?q=Cherry+Studio'
+    })
+    expect(result).toEqual({
+      capability: 'searchKeywords',
+      inputs: ['Cherry Studio'],
+      providerId: 'specstream',
+      query: 'Cherry Studio',
+      results: [
+        {
+          content: 'SpecStream Answer Snippet',
+          sourceInput: 'Cherry Studio',
+          title: 'SpecStream Answer',
+          url: 'https://example.com/answer'
+        },
+        {
+          content: 'SpecStream Row Snippet',
+          sourceInput: 'Cherry Studio',
+          title: 'SpecStream Row',
+          url: 'https://example.com/row'
+        },
+        {
+          content: '',
+          sourceInput: 'Cherry Studio',
+          title: 'https://example.com/unnamed',
+          url: 'https://example.com/unnamed'
+        },
+        {
+          content: 'SpecStream Source Snippet',
+          sourceInput: 'Cherry Studio',
+          title: 'Other Source',
+          url: 'https://other.example/page'
+        }
+      ]
+    })
+  })
+
+  it('matches the SpecStream extract request and returns the page as Markdown', async () => {
+    fetchMock.mockResolvedValue(createJsonResponse(loadFixtureJson('specstream-extract-response.json')))
+
+    const provider = createProviderDriver(
+      SpecStreamProvider,
+      createProvider({
+        id: 'specstream',
+        name: 'SpecStream',
+        apiKeys: ['specstream-key'],
+        capabilities: [
+          { feature: 'searchKeywords', apiHost: 'https://api.specstream.ai' },
+          { feature: 'fetchUrls', apiHost: 'https://api.specstream.ai' }
+        ]
+      })
+    )
+
+    const result = await provider.fetchUrls('https://example.com/article', runtimeConfig)
+
+    expect(toRequestSnapshot(fetchMock.mock.lastCall as [string, RequestInit | undefined])).toEqual({
+      body: { urls: ['https://example.com/article'], format: 'markdown' },
+      headers: {
+        accept: 'application/json',
+        authorization: 'Bearer specstream-key',
+        'content-type': 'application/json',
+        'http-referer': 'https://cherry-ai.com',
+        'x-title': 'Cherry Studio'
+      },
+      method: 'POST',
+      url: 'https://api.specstream.ai/v1/extract'
+    })
+    expect(result.results[0]).toEqual({
+      content: 'Fetched page content in Markdown.',
+      sourceInput: 'https://example.com/article',
+      title: 'SpecStream Fetched Page',
+      url: 'https://example.com/article'
+    })
+  })
+
+  it('surfaces SpecStream HTTP failures with the provider status', async () => {
+    fetchMock.mockResolvedValue(createJsonResponse({ error: { message: 'Balance is empty' } }, 402))
+
+    const provider = createProviderDriver(
+      SpecStreamProvider,
+      createProvider({
+        id: 'specstream',
+        name: 'SpecStream',
+        apiKeys: ['specstream-key'],
+        capabilities: [{ feature: 'searchKeywords', apiHost: 'https://api.specstream.ai' }]
+      })
+    )
+
+    await expect(provider.searchKeywords('Cherry Studio', runtimeConfig)).rejects.toThrow(
+      /specstream request failed: HTTP 402/
     )
   })
 

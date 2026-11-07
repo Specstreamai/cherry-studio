@@ -1,0 +1,54 @@
+{
+  "data": {
+    "kind": "fact",
+    "query": "Who founded Cherry Studio?",
+    "columns": [],
+    "answer": {
+      "value": "SpecStream Answer",
+      "page": "https://example.com/answer",
+      "seen_at": "2026-11-01T10:00:00Z"
+    },
+    "rows": [
+      {
+        "name": "SpecStream Row",
+        "page": "https://example.com/row",
+        "snippet": "SpecStream Row Snippet",
+        "probability": 0.9,
+        "sources": ["https://example.com/answer"],
+        "fields": {}
+      },
+      {
+        "name": " ",
+        "page": "https://example.com/unnamed",
+        "snippet": null
+      }
+    ],
+    "sources": [
+      {
+        "url": "https://example.com/answer",
+        "title": "Answer Source",
+        "site": "example.com",
+        "snippet": "SpecStream Answer Snippet",
+        "published": "2026-10-01",
+        "cited": true
+      },
+      {
+        "url": "https://example.com/row",
+        "title": "Row Source",
+        "site": "example.com",
+        "snippet": "Row duplicate snippet",
+        "cited": true
+      },
+      {
+        "url": "https://other.example/page",
+        "title": " Other Source ",
+        "site": "other.example",
+        "snippet": "SpecStream Source Snippet",
+        "cited": false
+      }
+    ],
+    "request_id": "req_test",
+    "took_ms": 1200,
+    "price_usd": 0.005
+  }
+}

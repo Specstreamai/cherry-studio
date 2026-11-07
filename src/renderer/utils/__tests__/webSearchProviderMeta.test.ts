@@ -64,6 +64,12 @@ describe('webSearchProviderMeta', () => {
     expect(getWebSearchProviderIconRef('desearch')).toMatchObject({ kind: 'provider', key: 'desearch' })
     expect(getWebSearchProviderOfficialWebsite('desearch')).toBe('https://desearch.ai')
     expect(getWebSearchProviderApiKeyWebsite('desearch')).toBe('https://console.desearch.ai/api-keys')
+    expect(getWebSearchProviderDescriptionKey('specstream')).toBe(
+      'settings.tool.websearch.provider_description.specstream'
+    )
+    expect(getWebSearchProviderIconRef('specstream')).toBeUndefined()
+    expect(getWebSearchProviderOfficialWebsite('specstream')).toBe('https://specstream.ai/docs/api')
+    expect(getWebSearchProviderApiKeyWebsite('specstream')).toBe('https://specstream.ai/workspace/agents?tab=keys')
     expect(getWebSearchProviderApiKeyWebsite('fetch')).toBeUndefined()
   })
 

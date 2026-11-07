@@ -47,6 +47,7 @@ import { ParallelProvider } from '../api/ParallelProvider'
 import { QueritProvider } from '../api/QueritProvider'
 import { SearxngProvider } from '../api/SearxngProvider'
 import { SerplyProvider } from '../api/SerplyProvider'
+import { SpecStreamProvider } from '../api/SpecStreamProvider'
 import { TavilyProvider } from '../api/TavilyProvider'
 import { ZhipuProvider } from '../api/ZhipuProvider'
 import { createWebSearchProvider } from '../factory'
@@ -89,6 +90,7 @@ describe('createWebSearchProvider', () => {
       'searchapi',
       'searxng',
       'serply',
+      'specstream',
       'tavily',
       'yuanbao',
       'zhipu'
@@ -140,5 +142,17 @@ describe('createWebSearchProvider', () => {
       )
     ).toBeInstanceOf(DeepSeekProvider)
     expect(createWebSearchProvider(createProvider({ id: 'desearch' }), rotationState)).toBeInstanceOf(DesearchProvider)
+    expect(
+      createWebSearchProvider(
+        createProvider({
+          id: 'specstream',
+          capabilities: [
+            { feature: 'searchKeywords', apiHost: 'https://api.specstream.ai' },
+            { feature: 'fetchUrls', apiHost: 'https://api.specstream.ai' }
+          ]
+        }),
+        rotationState
+      )
+    ).toBeInstanceOf(SpecStreamProvider)
   })
 })

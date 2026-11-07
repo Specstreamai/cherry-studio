@@ -89,6 +89,11 @@ const WEB_SEARCH_PROVIDER_DISPLAY_META: Record<WebSearchProviderId, WebSearchPro
     officialWebsite: 'https://www.searchapi.io',
     apiKeyWebsite: 'https://www.searchapi.io/api_tokens'
   },
+  specstream: {
+    descriptionKey: 'settings.tool.websearch.provider_description.specstream',
+    officialWebsite: 'https://specstream.ai/docs/api',
+    apiKeyWebsite: 'https://specstream.ai/workspace/agents?tab=keys'
+  },
   searxng: {
     descriptionKey: 'settings.tool.websearch.provider_description.searxng',
     iconRef: providerIconRef('searxng'),

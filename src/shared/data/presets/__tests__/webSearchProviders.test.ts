@@ -126,6 +126,26 @@ describe('web search provider schemas', () => {
     ])
   })
 
+  it('models SpecStream as one provider with keyword search and URL fetch capabilities', () => {
+    const specstream = PRESETS_WEB_SEARCH_PROVIDERS.find((preset) => preset.id === 'specstream')
+
+    expect(specstream).toBeDefined()
+    expect(specstream!.capabilities).toEqual([
+      {
+        feature: 'searchKeywords',
+        requiresApiHost: true,
+        requiresApiKey: true,
+        apiHost: 'https://api.specstream.ai'
+      },
+      {
+        feature: 'fetchUrls',
+        requiresApiHost: true,
+        requiresApiKey: true,
+        apiHost: 'https://api.specstream.ai'
+      }
+    ])
+  })
+
   it('models Fetch as a hostless built-in URL fetch provider', () => {
     const fetch = PRESETS_WEB_SEARCH_PROVIDERS.find((preset) => preset.id === 'fetch')
 

@@ -1,0 +1,17 @@
+{
+  "data": {
+    "results": [
+      {
+        "url": "https://example.com/article",
+        "status": "ok",
+        "title": "SpecStream Fetched Page",
+        "text": "Fetched page content in Markdown.",
+        "published": "2026-10-01",
+        "read_from": "live"
+      }
+    ],
+    "request_id": "req_test",
+    "took_ms": 800,
+    "price_usd": 0.0008
+  }
+}

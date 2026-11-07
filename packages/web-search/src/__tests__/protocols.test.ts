@@ -16,6 +16,7 @@ import { querit } from '../providers/querit'
 import { searchapi } from '../providers/searchapi'
 import { discoverSearxngEngines, searxng } from '../providers/searxng'
 import { serply } from '../providers/serply'
+import { specstream } from '../providers/specstream'
 import { tavily } from '../providers/tavily'
 import { yuanbao } from '../providers/yuanbao'
 import { zhipu } from '../providers/zhipu'
@@ -238,6 +239,112 @@ describe('portable provider contracts', () => {
     const error = await client.execute(search('desearch')).catch((caught: unknown) => caught)
     expect(error).toMatchObject({ kind: 'http', status: 403 })
     expect(JSON.stringify(error)).not.toContain('test-key')
+  })
+
+  it('searches SpecStream with a bearer key and lists the answer page, rows, then unlisted sources', async () => {
+    const { client, requests } = setup(specstream, fixture('specstream-search-response.json'))
+    const result = await client.execute(search('specstream'))
+    expect(requests[0].url).toBe('https://service.example/proxy/v1/web-search?q=hello')
+    expect(requests[0].method).toBe('GET')
+    expect(requests[0].body).toBeUndefined()
+    expect(new Headers(requests[0].headers).get('authorization')).toBe('Bearer test-key')
+    expect(result.results).toEqual([
+      {
+        title: 'SpecStream Answer',
+        url: 'https://example.com/answer',
+        content: 'SpecStream Answer Snippet',
+        sourceInput: 'hello'
+      },
+      {
+        title: 'SpecStream Row',
+        url: 'https://example.com/row',
+        content: 'SpecStream Row Snippet',
+        sourceInput: 'hello'
+      },
+      { title: 'https://example.com/unnamed', url: 'https://example.com/unnamed', content: '', sourceInput: 'hello' },
+      {
+        title: 'Other Source',
+        url: 'https://other.example/page',
+        content: 'SpecStream Source Snippet',
+        sourceInput: 'hello'
+      }
+    ])
+  })
+
+  it('respects maxResults and skips the answer entry when the reply has no answer', async () => {
+    const limited = setup(specstream, fixture('specstream-search-response.json'))
+    const limitedResult = await limited.client.execute({
+      ...search('specstream'),
+      capability: 'searchKeywords',
+      config: { apiHost: 'https://service.example/proxy', maxResults: 2 }
+    })
+    expect(limitedResult.results.map((item) => item.url)).toEqual([
+      'https://example.com/answer',
+      'https://example.com/row'
+    ])
+
+    const noAnswer = setup(
+      specstream,
+      JSON.stringify({
+        data: {
+          answer: null,
+          rows: [],
+          sources: [{ url: 'https://other.example/page', title: null, site: 'other.example', snippet: null }]
+        }
+      })
+    )
+    const noAnswerResult = await noAnswer.client.execute({ ...search('specstream'), input: 'a&b' })
+    expect(noAnswer.requests[0].url).toBe('https://service.example/proxy/v1/web-search?q=a%26b')
+    expect(noAnswerResult.results).toEqual([
+      { title: 'other.example', url: 'https://other.example/page', content: '', sourceInput: 'a&b' }
+    ])
+  })
+
+  it('limits the SpecStream question to 2,000 whole characters', async () => {
+    const { client, requests } = setup(specstream, fixture('specstream-search-response.json'))
+    await client.execute({ ...search('specstream'), input: '🚀'.repeat(2001) })
+    expect(new URL(requests[0].url).searchParams.get('q')).toBe('🚀'.repeat(2000))
+  })
+
+  it('reads one page through the SpecStream Extract API as Markdown', async () => {
+    const { client, requests } = setup(specstream, fixture('specstream-extract-response.json'))
+    const result = await client.execute({
+      providerId: 'specstream',
+      capability: 'fetchUrls',
+      input: ' https://example.com/article ',
+      config: { apiHost: 'https://service.example/proxy' },
+      credentials: { apiKey: 'test-key' }
+    })
+    expect(requests[0].url).toBe('https://service.example/proxy/v1/extract')
+    expect(requests[0].method).toBe('POST')
+    expect(JSON.parse(requests[0].body!)).toEqual({ urls: ['https://example.com/article'], format: 'markdown' })
+    expect(new Headers(requests[0].headers).get('authorization')).toBe('Bearer test-key')
+    expect(result.results[0]).toEqual({
+      title: 'SpecStream Fetched Page',
+      content: 'Fetched page content in Markdown.',
+      url: ' https://example.com/article ',
+      sourceInput: ' https://example.com/article '
+    })
+  })
+
+  it.each([
+    ['blocked', { status: 'blocked' }, 'fetch_blocked'],
+    ['empty', { status: 'empty', text: '' }, 'fetch_empty'],
+    ['ok without text', { status: 'ok', text: '  ' }, 'empty_content']
+  ])('rejects a SpecStream Extract page that is %s', async (_name, page, code) => {
+    const { client } = setup(
+      specstream,
+      JSON.stringify({ data: { results: [{ url: 'https://example.com/a', ...page }] } })
+    )
+    await expect(
+      client.execute({
+        providerId: 'specstream',
+        capability: 'fetchUrls',
+        input: 'https://example.com/a',
+        config: { apiHost: 'https://service.example/proxy' },
+        credentials: { apiKey: 'test-key' }
+      })
+    ).rejects.toMatchObject({ code })
   })
 
   it('keeps SearXNG search separate from discovery and retains hits needing host enrichment', async () => {
